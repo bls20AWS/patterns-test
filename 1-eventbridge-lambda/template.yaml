@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EventBridge to Lambda
+  
+Resources:
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Description: Invoked by EventBridge rule
+    Properties:
+      CodeUri: ConsumerFunction/
+      Handler: app.handler
+      Runtime: nodejs12.x
+      Timeout: 3
+      Events:
+        Trigger:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - custom.myApp
+              detail-type:
+                - transaction                
+              detail:
+                location:
+                  - "prefix": "EUR-"

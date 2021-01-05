@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EventBridge to Lambda
+  
+Resources:
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ConsumerFunction/
+      Handler: app.handler
+      Runtime: nodejs12.x
+      Timeout: 3
+      Events:
+        Trigger:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - custom.myApp
+              detail-type:
+                - transaction                
+              detail:
+                location:
+                  - "prefix": "EUR-"
+
+  EventRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: "European transactions"
+      EventPattern: 
+        source: 
+          - "custom.myATMapp"
+        detail-type:
+          - transaction   
+        detail: 
+          result: 
+            - "approved"
+      State: "ENABLED"
+      Targets: 
+        - Id: "Target1"
+          Arn: 
+            Fn::GetAtt: 
+              - "ConsumerFunction"
+              - "Arn"
+
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "ConsumerFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "EventRule"
+          - "Arn"
